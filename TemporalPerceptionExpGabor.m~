@@ -10,18 +10,16 @@ function CatchError = TemporalPerceptionExpGabor(sub,runtype)
 % 
 % stim duration:        500 ms
 % response time:        1100 ms
-% max trial time:       1800 ms (about 200 ms ISI built into trial, will catch lag)
+% max trial time:       1800 ms
+% num. trials/block:    16
 % 
-% num. blocks T1:       3 (for initial adaptation to task)
-% num. trials T1:       32
-
+% num. blocks T1:       3
 % num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
 % num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
-% num. trials/block:    16 (can't do less than 16 for property balancing reasons)
 % block duration:       28.8 s
-% rest between blocks:  15 s (900 frames @ 60 Hz)
+% rest between blocks:  15 s
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((15*(18+1))+(28.8*18))/60 = 13.39 min
+% fMRI run duration:    ((15*19)+(28.8*18))/60 = 13.39 min
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -46,7 +44,6 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    s.nRestFrames = 900;
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
     s.redColor = [.8 0 0];
@@ -67,7 +64,7 @@ try %Use try catch loops for elegant error handling with PTB
     Screen('TextSize', params.win, 28);
     rectSize = 200;%size of stimulus rect
     baseRect = [0 0 rectSize rectSize]; %make a PTB rect var
-    posXs = [params.maxXpixels*0.3 params.maxXpixels*0.7];%X positions for the stimuli
+    posXs = [params.maxXpixels*0.2 params.maxXpixels*0.8];%X positions for the stimuli
     posYs = [params.maxYpixels*0.5 params.maxYpixels*0.5];%Y positions for the stimuli
     s.angles = [0 0];%%IMPORTANT
     s.SOA = 1;%%IMPORTANT
@@ -251,15 +248,14 @@ try %Use try catch loops for elegant error handling with PTB
         %draw central fixation dot in back buffer
         Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
         s.RestStart(b) = Screen('Flip', params.win);
-        s.RestEnd(b) = Screen('Flip', params.win,s.RestStart(b)+ (params.ifi*(s.nRestFrames-0.5)));
+        s.RestEnd(b) = Screen('Flip', params.win,s.RestStart(b)+ (params.ifi*(nRestFrames-0.5)));
         %s.RestEnd(b) = WaitSecs(10);
         s.RestStart(b) = s.RestStart(b) - s.expStartTime;
         s.RestEnd(b) = s.RestEnd(b) - s.expStartTime;
         save(subFile,'s');
     end %--blocks
     s.expDuration = GetSecs- s.expStartTime;
-    s.scannerEndTime = GetSecs;
-    %s.scannerEndTime = WaitForScannerEnd;
+    s.scannerEndTime = WaitForScannerEnd;
     
     save(subFile,'s');
     % Clear the screen
