@@ -21,7 +21,7 @@ function CatchError = TemporalPerceptionExpGabor(sub,runtype)
 % block duration:       28.8 s
 % rest between blocks:  15 s (900 frames @ 60 Hz)
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((15*(18+1))+(28.8*18))/60 = 13.39 min
+% fMRI run duration:    ((18*28.8)+(19*15))/60 = 13.39 min (13 min, 30 sec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -121,7 +121,7 @@ try %Use try catch loops for elegant error handling with PTB
         s.simSJ = s.SJ;
     end
     if ~strcmpi(runtype,'t1') %if any run but the t1 scan (initial titration)
-        s.nblockseach = 4;
+        s.nblockseach = 6;
         vals = {'SJ','CL','OR'}; %will be 12 blocks per fmri scan
         s.tasks = [];
         for i = 1:s.nblockseach
