@@ -89,8 +89,8 @@ try %Use try catch loops for elegant error handling with PTB
     disableNorm = 1;
     preContrastMultiplier = 0.5;
     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
-    gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,1);
-    gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,1);
+    gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
+    gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     if strcmpi(runtype,'t1')
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
@@ -143,7 +143,7 @@ try %Use try catch loops for elegant error handling with PTB
         if b == 1
             Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             dotOn = Screen('Flip', params.win);
-            Screen('Flip', params.win,dotOn+ (params.ifi*(600-0.5)));
+            Screen('Flip', params.win,dotOn+ (params.ifi*(s.nRestFrames-0.5)));
         end
         if strcmpi(s.tasks{b},'SJ')
             taskText = 'TIME';
@@ -155,7 +155,7 @@ try %Use try catch loops for elegant error handling with PTB
             s.simCL = s.CL;
         elseif strcmpi(s.tasks{b},'CL')
             taskText = 'COLOR';
-            s.simCL = s.CL;
+            s.simSJ = s.SJ;
             s.simOR = s.OR;
         end
         DrawFormattedText(params.win,taskText, 'center', 'center');
@@ -173,20 +173,26 @@ try %Use try catch loops for elegant error handling with PTB
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
                 s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
-                s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-                if isfield(s.simCL,'allStimlevels') && isfield(s.simOR,'allStimlevels')
+                if s.RT(b,i) < 999
+                    s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
+                end
+                if isfield(s.simCL,'allStimlevels') & isfield(s.simOR,'allStimlevels')
                     s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
                     s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
                 else
                     s.simCLacc(b,i) = responderSub(s.simCL.stimlevel);
                     s.simORacc(b,i) = responderSub(s.simOR.stimlevel);
                 end
-                if ~s.sameDiffCL(b,i)
+                if s.RT(b,i) < 999
                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
-                end
-                if ~s.sameDiffOR(b,i)
                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
                 end
+%                 if ~s.sameDiffCL(b,i)
+%                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+%                 end
+%                 if ~s.sameDiffOR(b,i)
+%                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 end
                 
             elseif strcmpi(s.tasks{b},'CL')
 
@@ -198,22 +204,28 @@ try %Use try catch loops for elegant error handling with PTB
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
                 s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
-                s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                if s.RT(b,i) < 999
+                    s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                end
                 %s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                 %s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
-                if isfield(s.simSJ,'allStimlevels') && isfield(s.simOR,'allStimlevels')
+                if isfield(s.simSJ,'allStimlevels') & isfield(s.simOR,'allStimlevels')
                     s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                     s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
                 else
                     s.simSJacc(b,i) = responderSub(s.simSJ.stimlevel);
                     s.simORacc(b,i) = responderSub(s.simOR.stimlevel);
                 end
-                if ~s.sameDiffSJ(b,i)
+                if s.RT(b,i) < 999
                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
-                end
-                if ~s.sameDiffOR(b,i)
                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
                 end
+%                 if ~s.sameDiffSJ(b,i)
+%                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+%                 end
+%                 if ~s.sameDiffOR(b,i)
+%                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 end
                 
             elseif strcmpi(s.tasks{b},'OR')
 
@@ -226,22 +238,28 @@ try %Use try catch loops for elegant error handling with PTB
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
                 s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
-                s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                if s.RT(b,i) < 999
+                    s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                end
                 %s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                 %s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
-                if isfield(s.simSJ,'allStimlevels') && isfield(s.simCL,'allStimlevels')
+                if isfield(s.simSJ,'allStimlevels') & isfield(s.simCL,'allStimlevels')
                     s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                     s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
                 else
                     s.simSJacc(b,i) = responderSub(s.simSJ.stimlevel);
                     s.simCLacc(b,i) = responderSub(s.simCL.stimlevel);
                 end
-                if ~s.sameDiffSJ(b,i)
+                if s.RT(b,i) < 999
                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
-                end
-                if ~s.sameDiffCL(b,i)
                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
                 end
+%                 if ~s.sameDiffSJ(b,i)
+%                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+%                 end
+%                 if ~s.sameDiffCL(b,i)
+%                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+%                 end
             end
             save(subFile,'s');%save 's' structure every trial
         end %--trials
@@ -266,6 +284,7 @@ try %Use try catch loops for elegant error handling with PTB
     CleanUp;
     
 catch CatchError
+    RestrictKeysForKbCheck([])
     ListenChar(0);
     sca;
 end
@@ -325,38 +344,38 @@ end
     function SJ = setupSJpest(stimStart)
         stimMin = 0; 
         if nargin < 1
-            stimStart = 0.7; %starting threshold
+            stimStart = 0.8; %starting threshold
         end
         stimMax = 1; 
-        minStep = 0.001; 
-        startStep = 0.015; %starting adjustment size 
-        maxStep = 0.05; %largest adjustement size
+        minStep = 0.01; 
+        startStep = 0.05; %starting adjustment size 
+        maxStep = 0.1; %largest adjustement size
         SJ = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupSJpest
 
     function CL = setupCLpest(stimStart)
-        stimMin = 0.005; %minumum difference in red hue
+        stimMin = 0.001; %minumum difference in red hue
         if nargin < 1
             stimStart = 0.6; %0-1
         end
         stimMax = 0.8; %
-        minStep = 0.001; %
-        startStep = 0.015; %
-        maxStep = 0.05; %largest adjustement size
+        minStep = 0.01; %
+        startStep = 0.05; %
+        maxStep = 0.1; %largest adjustement size
         CL = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupCLpest
 
     function OR = setupORpest(stimStart)
-        stimMin = 0.1; %minumum difference in angle of orientation
+        stimMin = 1; %minumum difference in angle of orientation
         if nargin < 1
             stimStart = 30; %
         end
         stimMax = 90;
-        minStep = 0.025;
-        startStep = 1; %
-        maxStep = 3; %largest adjustement size
+        minStep = 1;
+        startStep = 5; %
+        maxStep = 10; %largest adjustement size
         OR = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupORpest
@@ -407,6 +426,14 @@ end
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
+            elseif keycode(KbName('1!')) && sameCL == 0
+                response = 1;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
+            elseif keycode(KbName('2@')) && sameCL > 0
+                response = 2;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
             elseif keycode(KbName('2@')) && sameCL == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
@@ -425,10 +452,18 @@ end
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
+            elseif keycode(KbName('1!')) && sameOR == 0
+                response = 1;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
             elseif keycode(KbName('2@')) && sameOR == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
+            elseif keycode(KbName('2@')) && sameOR > 0 
+                response = 2;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
             elseif keycode(KbName('escape'))
                 sca;
                 ListenChar(0);
@@ -443,14 +478,22 @@ end
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
+            elseif keycode(KbName('1!')) && sameSJ == 0 %stimuli were different and response was same
+                response = 1;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
             elseif keycode(KbName('2@')) && sameSJ == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
-                acc = 1; 
+                acc = 1;
+            elseif keycode(KbName('2@')) && sameSJ > 0 %stimuli were same and response was different
+                response = 2;
+                RT = secs-TrialOnsetTime;
+                acc = 0;
             elseif sum(keycode) < 1 %no response
                 response = 3; %no response
                 RT = 999; %dummy value
-                acc = 1;
+                acc = 0;
             elseif keycode(KbName('escape'))
                 sca;
                 ListenChar(0);
@@ -476,6 +519,7 @@ end
     end %ShowStimulus
 
     function CleanUp
+        RestrictKeysForKbCheck([])
         ListenChar(0);
         sca;
     end %CleanUp

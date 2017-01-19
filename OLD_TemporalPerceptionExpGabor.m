@@ -10,16 +10,18 @@ function CatchError = TemporalPerceptionExpGabor(sub,runtype)
 % 
 % stim duration:        500 ms
 % response time:        1100 ms
-% max trial time:       1800 ms
-% num. trials/block:    16
+% max trial time:       1800 ms (about 200 ms ISI built into trial, will catch lag)
 % 
-% num. blocks T1:       3
+% num. blocks T1:       3 (for initial adaptation to task)
+% num. trials T1:       32
+
 % num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
 % num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
+% num. trials/block:    16 (can't do less than 16 for property balancing reasons)
 % block duration:       28.8 s
-% rest between blocks:  15 s
+% rest between blocks:  15 s (900 frames @ 60 Hz)
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((15*19)+(28.8*18))/60 = 13.39 min
+% fMRI run duration:    ((15*(18+1))+(28.8*18))/60 = 13.39 min
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -44,6 +46,7 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
+    s.nRestFrames = 900;
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
     s.redColor = [.8 0 0];
@@ -64,7 +67,7 @@ try %Use try catch loops for elegant error handling with PTB
     Screen('TextSize', params.win, 28);
     rectSize = 200;%size of stimulus rect
     baseRect = [0 0 rectSize rectSize]; %make a PTB rect var
-    posXs = [params.maxXpixels*0.2 params.maxXpixels*0.8];%X positions for the stimuli
+    posXs = [params.maxXpixels*0.3 params.maxXpixels*0.7];%X positions for the stimuli
     posYs = [params.maxYpixels*0.5 params.maxYpixels*0.5];%Y positions for the stimuli
     s.angles = [0 0];%%IMPORTANT
     s.SOA = 1;%%IMPORTANT
@@ -86,8 +89,8 @@ try %Use try catch loops for elegant error handling with PTB
     disableNorm = 1;
     preContrastMultiplier = 0.5;
     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
-    gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,1);
-    gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,1);
+    gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
+    gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     if strcmpi(runtype,'t1')
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
@@ -140,7 +143,7 @@ try %Use try catch loops for elegant error handling with PTB
         if b == 1
             Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             dotOn = Screen('Flip', params.win);
-            Screen('Flip', params.win,dotOn+ (params.ifi*(600-0.5)));
+            Screen('Flip', params.win,dotOn+ (params.ifi*(s.nRestFrames-0.5)));
         end
         if strcmpi(s.tasks{b},'SJ')
             taskText = 'TIME';
@@ -152,7 +155,7 @@ try %Use try catch loops for elegant error handling with PTB
             s.simCL = s.CL;
         elseif strcmpi(s.tasks{b},'CL')
             taskText = 'COLOR';
-            s.simCL = s.CL;
+            s.simSJ = s.SJ;
             s.simOR = s.OR;
         end
         DrawFormattedText(params.win,taskText, 'center', 'center');
@@ -171,19 +174,21 @@ try %Use try catch loops for elegant error handling with PTB
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
                 s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
                 s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-                if isfield(s.simCL,'allStimlevels') && isfield(s.simOR,'allStimlevels')
+                if isfield(s.simCL,'allStimlevels') & isfield(s.simOR,'allStimlevels')
                     s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
                     s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
                 else
                     s.simCLacc(b,i) = responderSub(s.simCL.stimlevel);
                     s.simORacc(b,i) = responderSub(s.simOR.stimlevel);
                 end
-                if ~s.sameDiffCL(b,i)
-                    s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
-                end
-                if ~s.sameDiffOR(b,i)
-                    s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
-                end
+                s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+                s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 if ~s.sameDiffCL(b,i)
+%                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+%                 end
+%                 if ~s.sameDiffOR(b,i)
+%                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 end
                 
             elseif strcmpi(s.tasks{b},'CL')
 
@@ -198,19 +203,21 @@ try %Use try catch loops for elegant error handling with PTB
                 s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
                 %s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                 %s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
-                if isfield(s.simSJ,'allStimlevels') && isfield(s.simOR,'allStimlevels')
+                if isfield(s.simSJ,'allStimlevels') & isfield(s.simOR,'allStimlevels')
                     s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                     s.simORacc(b,i) = responderSub(min(s.simOR.allStimlevels));
                 else
                     s.simSJacc(b,i) = responderSub(s.simSJ.stimlevel);
                     s.simORacc(b,i) = responderSub(s.simOR.stimlevel);
                 end
-                if ~s.sameDiffSJ(b,i)
-                    s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
-                end
-                if ~s.sameDiffOR(b,i)
-                    s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
-                end
+                s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+                s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 if ~s.sameDiffSJ(b,i)
+%                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+%                 end
+%                 if ~s.sameDiffOR(b,i)
+%                     s.simOR = CalculateStimLevel(s.simOR,s.simORacc(b,i));
+%                 end
                 
             elseif strcmpi(s.tasks{b},'OR')
 
@@ -226,19 +233,21 @@ try %Use try catch loops for elegant error handling with PTB
                 s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
                 %s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                 %s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
-                if isfield(s.simSJ,'allStimlevels') && isfield(s.simCL,'allStimlevels')
+                if isfield(s.simSJ,'allStimlevels') & isfield(s.simCL,'allStimlevels')
                     s.simSJacc(b,i) = responderSub(min(s.simSJ.allStimlevels));
                     s.simCLacc(b,i) = responderSub(min(s.simCL.allStimlevels));
                 else
                     s.simSJacc(b,i) = responderSub(s.simSJ.stimlevel);
                     s.simCLacc(b,i) = responderSub(s.simCL.stimlevel);
                 end
-                if ~s.sameDiffSJ(b,i)
-                    s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
-                end
-                if ~s.sameDiffCL(b,i)
-                    s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
-                end
+                s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+                s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+%                 if ~s.sameDiffSJ(b,i)
+%                     s.simSJ = CalculateStimLevel(s.simSJ,s.simSJacc(b,i));
+%                 end
+%                 if ~s.sameDiffCL(b,i)
+%                     s.simCL = CalculateStimLevel(s.simCL,s.simCLacc(b,i));
+%                 end
             end
             save(subFile,'s');%save 's' structure every trial
         end %--trials
@@ -248,20 +257,22 @@ try %Use try catch loops for elegant error handling with PTB
         %draw central fixation dot in back buffer
         Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
         s.RestStart(b) = Screen('Flip', params.win);
-        s.RestEnd(b) = Screen('Flip', params.win,s.RestStart(b)+ (params.ifi*(nRestFrames-0.5)));
+        s.RestEnd(b) = Screen('Flip', params.win,s.RestStart(b)+ (params.ifi*(s.nRestFrames-0.5)));
         %s.RestEnd(b) = WaitSecs(10);
         s.RestStart(b) = s.RestStart(b) - s.expStartTime;
         s.RestEnd(b) = s.RestEnd(b) - s.expStartTime;
         save(subFile,'s');
     end %--blocks
     s.expDuration = GetSecs- s.expStartTime;
-    s.scannerEndTime = WaitForScannerEnd;
+    s.scannerEndTime = GetSecs;
+    %s.scannerEndTime = WaitForScannerEnd;
     
     save(subFile,'s');
     % Clear the screen
     CleanUp;
     
 catch CatchError
+    RestrictKeysForKbCheck([])
     ListenChar(0);
     sca;
 end
@@ -472,6 +483,7 @@ end
     end %ShowStimulus
 
     function CleanUp
+        RestrictKeysForKbCheck([])
         ListenChar(0);
         sca;
     end %CleanUp
