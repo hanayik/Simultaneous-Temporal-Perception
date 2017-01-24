@@ -95,7 +95,7 @@ try %Use try catch loops for elegant error handling with PTB
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
         s.task = {};
-        s.tasks = {'SJ','OR','CL'}; %do all 3 tasks for initial titration
+        s.tasks = {'OR','SJ','CL'}; %do all 3 tasks for initial titration
         %sides = {'L','R','L','R','L','R'};
         s.SJ = setupSJpest; %setup adaptive thresholding
         s.OR = setupORpest;
@@ -342,14 +342,14 @@ end
     end %responderSub
 
     function SJ = setupSJpest(stimStart)
-        stimMin = 0; 
+        stimMin = 0.001; 
         if nargin < 1
-            stimStart = 0.8; %starting threshold
+            stimStart = 0.9; %starting threshold
         end
         stimMax = 1; 
-        minStep = 0.01; 
-        startStep = 0.05; %starting adjustment size 
-        maxStep = 0.1; %largest adjustement size
+        minStep = 0.001; 
+        startStep = 0.1; %starting adjustment size 
+        maxStep = 0.3; %largest adjustement size
         SJ = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupSJpest
@@ -360,9 +360,9 @@ end
             stimStart = 0.6; %0-1
         end
         stimMax = 0.8; %
-        minStep = 0.01; %
-        startStep = 0.05; %
-        maxStep = 0.1; %largest adjustement size
+        minStep = 0.005; %
+        startStep = 0.1; %
+        maxStep = 0.2; %largest adjustement size
         CL = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupCLpest
@@ -370,12 +370,12 @@ end
     function OR = setupORpest(stimStart)
         stimMin = 1; %minumum difference in angle of orientation
         if nargin < 1
-            stimStart = 30; %
+            stimStart = 40; %
         end
         stimMax = 90;
         minStep = 1;
         startStep = 5; %
-        maxStep = 10; %largest adjustement size
+        maxStep = 15; %largest adjustement size
         OR = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
         
     end %setupORpest
