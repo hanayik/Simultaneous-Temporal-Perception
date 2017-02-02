@@ -1,4 +1,4 @@
-function CatchError = TemporalPerceptionExpGabor(sub,runtype)
+function CatchError = tbv(sub,runtype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %              Scan order: t1, fmri1, fmri2
 %
@@ -14,7 +14,7 @@ function CatchError = TemporalPerceptionExpGabor(sub,runtype)
 % 
 % num. blocks T1:       3 (for initial adaptation to task)
 % num. trials T1:       32
-
+%
 % num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
 % num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
 % num. trials/block:    16 (can't do less than 16 for property balancing reasons)
@@ -282,6 +282,7 @@ try %Use try catch loops for elegant error handling with PTB
     save(subFile,'s');
     % Clear the screen
     CleanUp;
+    disp(sprintf('\n\n** Accuracies **\n\nSJ: %2.2f, CL: %2.2f, OR: %2.2f', mean(s.SJ.accuracy)*100, mean(s.CL.accuracy)*100, mean(s.OR.accuracy)*100))
     
 catch CatchError
     RestrictKeysForKbCheck([])
@@ -342,12 +343,12 @@ end
     end %responderSub
 
     function SJ = setupSJpest(stimStart)
-        stimMin = 0.01; 
+        stimMin = 0.1; 
         if nargin < 1
-            stimStart = 0.6; %starting threshold
+            stimStart = 0.5; %starting threshold
         end
         stimMax = 1; 
-        minStep = 0.005; 
+        minStep = 0.05; 
         startStep = 0.1; %starting adjustment size 
         maxStep = 0.4; %largest adjustement size
         SJ = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
@@ -357,10 +358,10 @@ end
     function CL = setupCLpest(stimStart)
         stimMin = 0.01; %minumum difference in red hue
         if nargin < 1
-            stimStart = 0.6; %0-1
+            stimStart = 0.5; %0-1
         end
         stimMax = 0.8; %
-        minStep = 0.005; %
+        minStep = 0.01; %
         startStep = 0.1; %
         maxStep = 0.3; %largest adjustement size
         CL = SetUpAdaptiveStimLevel('PEST2',stimStart,stimMin,stimMax,startStep, minStep, maxStep);
@@ -370,7 +371,7 @@ end
     function OR = setupORpest(stimStart)
         stimMin = 0.1; %minumum difference in angle of orientation
         if nargin < 1
-            stimStart = 90; %
+            stimStart = 45; %
         end
         stimMax = 90;
         minStep = 0.1;
@@ -385,16 +386,16 @@ end
         if sameSJ
             SOA = b1;
         end
-        nframes = params.stimDur;
-        waitframes = 1;
-        RestrictKeysForKbCheck([KbName('escape') KbName('1!') KbName('2@')]);
-        dontClear = 1;
         if sameCL
             rectColors(2,:) = rectColors(1,:);
         end
         if sameOR
             rectAngles(2) = rectAngles(1);
         end
+        nframes = params.stimDur;
+        waitframes = 1;
+        RestrictKeysForKbCheck([KbName('escape') KbName('1!') KbName('2@')]);
+        dontClear = 1;
         
         vbl = Screen('Flip', params.win,[],dontClear); %flip the screen to get a time stamp
         for f = 1:nframes
