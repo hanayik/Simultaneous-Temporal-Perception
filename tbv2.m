@@ -163,15 +163,27 @@ try %Use try catch loops for elegant error handling with PTB
         Screen('Flip',params.win,taskTextOn + (60-0.5) * params.ifi);%wait 60 frames (about 1sec at 60Hz)
         %[s.leftRight(b,:), s.sameDiffSJ(b,:), s.sameDiffCL(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1],[0 1],[0 1]);
         if strcmpi(s.tasks{b},'SJ')
-            [s.leftRight(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffSJ(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'CL')
-            [s.leftRight(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffCL(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffSJ(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'OR')
-            [s.leftRight(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffOR(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffSJ(b,1:s.ntrials) = 1;
         end

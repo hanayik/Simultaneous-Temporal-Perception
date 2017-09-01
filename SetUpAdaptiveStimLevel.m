@@ -28,28 +28,26 @@ function  [A] = SetUpAdaptiveStimLevel(method,startingStimlevel,stimMin,stimMax,
 
 %%%% QUEST WILL BE ADDED IN THE FUTURE %%%%%%% 
 
-% if strncmpi(method,'QUEST',5) == true
-%     if isempty(which('QuestUpdate')), fprintf('Error: install PsychToolbox for QUEST\n'); end;
-%     if ~exist('gamma','var'), error('Not enough arguments for QUEST'); end;
-%     if ~exist('grain','var'), grain = []; end;
-%     if ~exist('range','var'), range = []; end;
-%     %call on QuestCreate function provided by Psychtoolbox
-%     %QuestCreate will also do the input checking for us
-%     %setup Quest threshold estimating for simultaneity judgement (sj)
-%     if ~isempty(strfind(method,'1'))
-%         pThreshold=0.50;%probability threshold
-%     elseif ~isempty(strfind(method,'3'))
-%         pThreshold=0.707;%probability threshold
-%     else
-%         pThreshold=0.794;%probability threshold
-%     end
-%     A=QuestCreate(tGuess,tGuessSd,pThreshold,beta,delta,gamma,grain);%make the 'A' structure for quest
-%     A.stimlevel = QuestQuantile(A);
-%     A.method = method;
-%     A.stimMin = stimMin;
-%     A.stimMax = stimMax;
-%     return;
-% end
+if strncmpi(method,'QUEST',5) == true
+    if isempty(which('QuestUpdate')), fprintf('Error: install PsychToolbox for QUEST\n'); end;
+    %call on QuestCreate function provided by Psychtoolbox
+    %QuestCreate will also do the input checking for us
+    %setup Quest threshold estimating for simultaneity judgement (sj)
+    pThreshold = 0.67;
+    tGuess = startingStimlevel;
+    tGuessSd = 3;
+    delta = 0.01;
+    beta = 5;
+    grain = minStep;
+    gamma = 0.5;
+    range = stimMax - stimMin;
+    A=QuestCreate(tGuess,tGuessSd,pThreshold,beta,delta,gamma,grain,range);%make the 'A' structure for quest
+    A.stimlevel = QuestQuantile(A);
+    A.method = method;
+    A.stimMin = stimMin;
+    A.stimMax = stimMax;
+    return;
+end
 
 if strncmpi(method,'PEST',4) == true 
     if nargin > 7

@@ -13,15 +13,16 @@ function CatchError = tbv(sub,runtype)
 % max trial time:       1800 ms (about 200 ms ISI built into trial, will catch lag)
 % 
 % num. blocks T1:       3 (for initial adaptation to task)
-% num. trials T1:       32
+% num. trials T1:       40
 %
+% task text/block:      1000 ms * 18
 % num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
 % num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
 % num. trials/block:    16 (can't do less than 16 for property balancing reasons)
-% block duration:       28.8 s
+% task block duration:  28.8 s (1.8 * 16)
 % rest between blocks:  15 s (900 frames @ 60 Hz)
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((18*28.8)+(19*15))/60 = 13.39 min (13 min, 30 sec)
+% fMRI run duration:    ((18*28.8)+(19*15)+18)/60 = 13.69 min (13 min, 41.4 sec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -46,9 +47,10 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    s.nRestFrames = 900;
+    s.nRestFrames = 900-1;
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
+    s.trimTime = 0;
     s.redColor = [.8 0 0];
     s.grnColor = [0 .8 0];
     s.gryColor = [0.5 0.5 0.5];
@@ -73,7 +75,7 @@ try %Use try catch loops for elegant error handling with PTB
     s.SOA = 1;%%IMPORTANT
     s.angleMin = -90;
     s.angleMax = 90;
-    params.stimDur =30; %30 frames = 500 msec
+    params.stimDur = 30; %30 frames = 500 msec
     params.dotType = 2;%fixation dot type
     params.dotSize = 10;%size of circle
     params.dotdur = 15;%duration of fixation alone, at beginning of trials
@@ -91,34 +93,44 @@ try %Use try catch loops for elegant error handling with PTB
     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
     gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
+    % For staircase:
+    sj_initVal = 0.5;
+    sj_minVal = 0.05;
+    sj_maxVal = 0.8;
+    sj_stepSize = 0.1;
+    %OR
+    or_initVal = 40;
+    or_minVal = 1;
+    or_maxVal = 90;
+    or_stepSize = 0.1;
+    %CL
+    cl_initVal = 0.6;
+    cl_minVal = 0.05;
+    cl_maxVal = 0.8;
+    cl_stepSize = 0.15;
     if strcmpi(runtype,'t1')
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
         s.task = {};
         s.tasks = {'SJ','OR','CL'}; %do all 3 tasks for initial titration
         %sides = {'L','R','L','R','L','R'};
-        s.SJ = setupSJpest; %setup adaptive thresholding
-        s.OR = setupORpest;
-        s.CL = setupCLpest;
-        %s.simSJ = s.SJ;
-        %s.simOR = s.OR;
-        %s.simCL = s.CL;
+        %s.SJ = setupSJpest; %setup adaptive thresholding
+        %s.OR = setupORpest;
+        %s.CL = setupCLpest;
+        s.SJ = simpleStair2('create', 'initialVal', sj_initVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
+        s.CL = simpleStair2('create', 'initialVal', cl_initVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
+        s.OR = simpleStair2('create', 'initialVal', or_initVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
+
     elseif strcmpi(runtype,'fmri1')
         l = load(fullfile(subdir,['sub_' subjectString '_t1.mat']));
-        s.SJ = setupSJpest(QuestMean(l.s.SJ)); %setup adaptive thresholding
-        s.OR = setupORpest(QuestMean(l.s.OR));
-        s.CL = setupCLpest(QuestMean(l.s.CL));
-        %s.simOR = s.OR;
-        %s.simCL = s.CL;
-        %s.simSJ = s.SJ;
+        s.SJ = simpleStair2('create', 'initialVal', l.s.SJ.stimulusVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
+        s.CL = simpleStair2('create', 'initialVal', l.s.CL.stimulusVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
+        s.OR = simpleStair2('create', 'initialVal', l.s.OR.stimulusVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
     elseif strcmpi(runtype,'fmri2')
         l = load(fullfile(subdir,['sub_' subjectString '_fmri1.mat']));
-        s.SJ = setupSJpest(QuestMean(l.s.SJ)); %setup adaptive thresholding
-        s.OR = setupORpest(QuestMean(l.s.OR));
-        s.CL = setupCLpest(QuestMean(l.s.CL));
-        %s.simOR = s.OR;
-        %s.simCL = s.CL;
-        %s.simSJ = s.SJ;
+        s.SJ = simpleStair2('create', 'initialVal', l.s.SJ.stimulusVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
+        s.CL = simpleStair2('create', 'initialVal', l.s.CL.stimulusVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
+        s.OR = simpleStair2('create', 'initialVal', l.s.OR.stimulusVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
     end
     if ~strcmpi(runtype,'t1') %if any run but the t1 scan (initial titration)
         s.nblockseach = 6;
@@ -145,6 +157,7 @@ try %Use try catch loops for elegant error handling with PTB
             dotOn = Screen('Flip', params.win);
             Screen('Flip', params.win,dotOn+ (params.ifi*(s.nRestFrames-0.5)));
         end
+        s.blockOnsetTime(b) = GetSecs-s.expStartTime;
         if strcmpi(s.tasks{b},'SJ')
             taskText = 'TIME';
             %s.simCL = s.CL;
@@ -163,78 +176,99 @@ try %Use try catch loops for elegant error handling with PTB
         Screen('Flip',params.win,taskTextOn + (60-0.5) * params.ifi);%wait 60 frames (about 1sec at 60Hz)
         %[s.leftRight(b,:), s.sameDiffSJ(b,:), s.sameDiffCL(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1],[0 1],[0 1]);
         if strcmpi(s.tasks{b},'SJ')
-            [s.leftRight(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffSJ(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'CL')
-            [s.leftRight(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffCL(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffSJ(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'OR')
-            [s.leftRight(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
+                [s.leftRight(b,:), s.sameDiffOR(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+            else
+                [s.leftRight(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+            end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffSJ(b,1:s.ntrials) = 1;
         end
-        s.blockOnsetTime(b) = GetSecs-s.expStartTime;
         for i = 1:s.ntrials
             if strcmpi(s.tasks{b},'SJ')
                 s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
-                s.SOA(b,i) = s.SJ.stimlevel;
+                s.SOA(b,i) = s.SJ.stimulusVal;
                 s.rectColors(b,i).colorMat = [s.redColor; s.redColor;];
                 s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)];
                 [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
-                s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
+                %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
 %                 if s.RT(b,i) < 999
 %                     s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
 %                 end
                 if (s.RT(b,i) < 999)
                     if (s.sameDiffSJ(b,i) == 0)
-                        s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
+                        %s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
+                        s.SJ = simpleStair2('update', 'data', s.SJ, 'accuracy', s.acc(b,i));
                     elseif (s.sameDiffSJ(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-                    end
+                        %s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
+                        s.SJ = simpleStair2('update', 'data', s.SJ, 'accuracy', s.acc(b,i));
+                    end 
                 end
                 
             elseif strcmpi(s.tasks{b},'CL')
-                defaultSOA = s.SJ.stimMin;
+                defaultSOA = s.SJ.minVal;
                 s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
                 s.SOA(b,i) = defaultSOA;
-                s.rectColors(b,i).colorMat = [s.redColor; [(s.redColor(1)-s.CL.stimlevel) s.CL.stimlevel*(0.299/0.587) 0];];
+                s.rectColors(b,i).colorMat = [s.redColor; [(s.redColor(1)-s.CL.stimulusVal) s.CL.stimulusVal*(0.299/0.587) 0];];
                 s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)];
                 [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
-                s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
+                %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
 %                 if s.RT(b,i) < 999
 %                     s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
 %                 end
                 if (s.RT(b,i) < 999)
                     if (s.sameDiffCL(b,i) == 0)
-                        s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                        %s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                        s.CL = simpleStair2('update', 'data', s.CL, 'accuracy', s.acc(b,i));
                     elseif (s.sameDiffCL(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                        %s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
+                        s.CL = simpleStair2('update', 'data', s.CL, 'accuracy', s.acc(b,i));
                     end
                 end
                 
             elseif strcmpi(s.tasks{b},'OR')
-                defaultSOA = s.SJ.stimMin;
+                defaultSOA = s.SJ.minVal;
                 s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
                 s.SOA(b,i) = defaultSOA;
                 s.rectColors(b,i).colorMat = [s.redColor; s.redColor;];
-                s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)-s.OR.stimlevel];
+                s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)-s.OR.stimulusVal];
                 [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
-                s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
+                %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
                 if (s.RT(b,i) < 999)
                     if (s.sameDiffOR(b,i) == 0)
-                        s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                        %s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                        s.OR = simpleStair2('update', 'data', s.OR, 'accuracy', s.acc(b,i));
                     elseif (s.sameDiffOR(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                        %s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
+                        s.OR = simpleStair2('update', 'data', s.OR, 'accuracy', s.acc(b,i));
                     end
                 end
+            end
+            s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
+            if (s.trialDuration(b,i) > s.maxTrialSecs)
+                s.trimTime = s.trialDuration(b,i) - s.maxTrialSecs;
             end
             save(subFile,'s');%save 's' structure every trial
         end %--trials
@@ -248,6 +282,7 @@ try %Use try catch loops for elegant error handling with PTB
         %s.RestEnd(b) = WaitSecs(10);
         s.RestStart(b) = s.RestStart(b) - s.expStartTime;
         s.RestEnd(b) = s.RestEnd(b) - s.expStartTime;
+        s.RestDuration(b) = s.RestEnd(b) - s.RestStart(b);
         save(subFile,'s');
     end %--blocks
     s.expDuration = GetSecs- s.expStartTime;
@@ -357,7 +392,7 @@ end
     end %setupORpest
 
     function [RT, acc, response, TrialOnsetTime, trialOffTime] = ShowStimulus(params, sameSJ, sameCL, sameOR, presOrder, rectColors, rectAngles, SOA, respTimeOut, maxTrialSecs, thisTask)
-        b1 = s.SJ.stimMin;
+        b1 = s.SJ.minVal;
         if sameSJ
             SOA = b1;
         end
@@ -394,7 +429,7 @@ end
         end
         deviceN = -1;
         forWhat = [];
-        untilTime = vbl+respTimeOut;
+        untilTime = vbl+respTimeOut - s.trimTime;
         RT = 999;
         [secs, keycode] = KbWait(deviceN, forWhat, untilTime);
         if strcmpi(thisTask,'CL')  

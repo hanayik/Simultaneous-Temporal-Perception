@@ -9,19 +9,22 @@ function [A] = CalculateStimLevel(A,accuracy,inverted)
 %inverted : [optional] true/false: does correct response make stimulus level smaller or larger
 %
 %%%%% QUEST WILL BE ADDED IN THE FUTURE %%%%%%
-% if strncmpi(A.method,'QUEST',5)
-%     A = QuestUpdate(A,A.stimlevel,accuracy);
-%     A.stimlevel = QuestQuantile(A);
-%     %bound all values
-%     if A.stimlevel < A.stimMin %set lower limit of this threshold
-%         A.stimlevel = A.stimMin;
-%     end
-%     if A.stimlevel > A.stimMax %set upper limit of this threshold
-%         A.stimlevel = A.stimMax;
-%     end
-%     A.trialCount = A.trialCount+1;
-%     return;
-% end
+if strncmpi(A.method,'QUEST',5)
+    %A.stimlevel = QuestQuantile(A);
+    A.stimlevel = QuestMean(A);
+    A = QuestUpdate(A, A.stimlevel, accuracy);
+    %bound all values
+    if A.stimlevel < A.stimMin %set lower limit of this threshold
+        A.stimlevel = A.stimMin;
+    end
+    if A.stimlevel > A.stimMax %set upper limit of this threshold
+        A.stimlevel = A.stimMax;
+    end
+    %A.trialCount = A.trialCount+1;
+    A.accuracy(A.trialCount) = accuracy;
+    A.allStimlevels(A.trialCount) = A.stimlevel;
+    return;
+end
 A.accuracy(A.trialCount) = accuracy;
 if ~exist('inverted','var')
     inverted = false;
