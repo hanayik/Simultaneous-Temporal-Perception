@@ -21,11 +21,11 @@ while 1
     Screen('Flip',params.win);
     
     [keyIsDown, secs, keycode] = KbCheck(-1);
-    if keycode(KbName('1!'))
+    if keycode(KbName('2@'))
         grnColor(2) = grnColor(2)-0.01;
-    elseif keycode(KbName('2@'))
-        grnColor(2) = grnColor(2)+0.01;
     elseif keycode(KbName('3#'))
+        grnColor(2) = grnColor(2)+0.01;
+    elseif keycode(KbName('4$'))
         WaitSecs(2);
         break;
     end
@@ -44,11 +44,11 @@ while 1
     Screen('FillRect',params.win,[redColor redColor gryColor gryColor],[gryRect redRect]);
     Screen('Flip',params.win);
     [keyIsDown, secs, keycode] = KbCheck(-1);
-    if keycode(KbName('1!'))
+    if keycode(KbName('2@'))
         gryColor(:) = gryColor(:)-0.01;
-    elseif keycode(KbName('2@'))
-        gryColor(:) = gryColor(:)+0.01;
     elseif keycode(KbName('3#'))
+        gryColor(:) = gryColor(:)+0.01;
+    elseif keycode(KbName('4$'))
         WaitSecs(2);
         break;
     end

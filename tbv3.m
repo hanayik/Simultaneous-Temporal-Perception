@@ -1,4 +1,4 @@
-function CatchError = tbv(sub,runtype)
+function CatchError = tbv3(sub,runtype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %              Scan order: t1, fmri1, fmri2
 %
@@ -97,17 +97,17 @@ try %Use try catch loops for elegant error handling with PTB
     sj_initVal = 0.5;
     sj_minVal = 0.05;
     sj_maxVal = 0.8;
-    sj_stepSize = 0.1;
+    sj_stepSize = 0.05; %percent of range
     %OR
     or_initVal = 40;
     or_minVal = 1;
     or_maxVal = 90;
-    or_stepSize = 0.1;
+    or_stepSize = 0.05; %percent of range
     %CL
-    cl_initVal = 0.6;
-    cl_minVal = 0.05;
+    cl_initVal = 0.3;
+    cl_minVal = 0.01;
     cl_maxVal = 0.8;
-    cl_stepSize = 0.15;
+    cl_stepSize = 0.05; %percent of range
     if strcmpi(runtype,'t1')
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
@@ -145,10 +145,10 @@ try %Use try catch loops for elegant error handling with PTB
         s.ntrials = 40;
         s.nblocks = 3;
     end
-    instruct1 = sprintf('For this part of the experiment you will\n\nsee two shapes on the screen and\n\nyou will make decisions based on your current task.\n\nSometimes you will make decisions about TIME\n\nand other times you will make decisions\n\nabout the COLOR or ANGLE of the rectangles.\n\nYour decision will be one of two options\n\nSAME or DIFFERENT.\n\nPress your thumb button for SAME\n\nand your index finger button for DIFFERENT.\n\nPress the thumb button now to continue.');
-    instruct2 = sprintf('During the experiment the task\n\nmay change from one block to the next.\n\nTo indicate your task, there will be\n\n the word TIME, COLOR, or ANGLE\n\ndisplayed on the screen for 1 second\n\n after each rest period. Keep in\n\n mind that the timing, color, and angle\n\nof each rectangle may be different\n\nor the same, but you must focus only on the\n\nproperty indicated by your task.\n\nPress the index finger button to begin.');
-    ShowInstructions(instruct1,'1!');
-    ShowInstructions(instruct2,'2@');
+    instruct1 = sprintf('For this part of the experiment you will\n\nsee two shapes on the screen and\n\nyou will make decisions based on your current task.\n\nSometimes you will make decisions about TIME\n\nand other times you will make decisions\n\nabout the COLOR or ANGLE of the rectangles.\n\nYour decision will be one of two options\n\nSAME or DIFFERENT.\n\nPress your index finger button for SAME\n\nand your middle finger button for DIFFERENT.\n\nPress the index finger button now to continue.');
+    instruct2 = sprintf('During the experiment the task\n\nmay change from one block to the next.\n\nTo indicate your task, there will be\n\n the word TIME, COLOR, or ANGLE\n\ndisplayed on the screen for 1 second\n\n after each rest period. Keep in\n\n mind that the timing, color, and angle\n\nof each rectangle may be different\n\nor the same, but you must focus only on the\n\nproperty indicated by your task.\n\nPress the middle finger button to begin.');
+    ShowInstructions(instruct1,'2@');
+    ShowInstructions(instruct2,'3#');
     s.expStartTime = WaitForScannerStart;
     
     for b = 1:s.nblocks   
@@ -305,12 +305,12 @@ end
 %               Sub routines below:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function expStartTime = WaitForScannerStart(keyToWaitFor)
-        if nargin < 1; keyToWaitFor = 'space'; end;
+        if nargin < 1; keyToWaitFor = 's'; end;
         DrawFormattedText(params.win,'Waiting for MRI to start the experiment...', 'center', 'center');
         Screen('Flip',params.win);
         RestrictKeysForKbCheck(KbName(keyToWaitFor));
-        deviceN = -1;
-        %[expStartTime] = KbWait(deviceN);
+        deviceN = -2;
+        %expStartTime = KbWait(deviceN);
         GetClicks
         expStartTime = GetSecs;
         RestrictKeysForKbCheck([]);
@@ -338,7 +338,7 @@ end
         DrawFormattedText(params.win, instruct, 'center', 'center');
         Screen('Flip',params.win);
         RestrictKeysForKbCheck(KbName(keyToWaitFor));
-        deviceN = -1;
+        deviceN = -2;
         KbWait(deviceN);
         RestrictKeysForKbCheck([]);
     end
@@ -404,7 +404,7 @@ end
         end
         nframes = params.stimDur;
         waitframes = 1;
-        RestrictKeysForKbCheck([KbName('escape') KbName('1!') KbName('2@')]);
+        RestrictKeysForKbCheck([KbName('escape') KbName('2@') KbName('3#')]);
         dontClear = 1;
         
         vbl = Screen('Flip', params.win,[],dontClear); %flip the screen to get a time stamp
@@ -433,19 +433,19 @@ end
         RT = 999;
         [secs, keycode] = KbWait(deviceN, forWhat, untilTime);
         if strcmpi(thisTask,'CL')  
-            if keycode(KbName('1!')) && sameCL > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && sameCL > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('1!')) && sameCL == 0
+            elseif keycode(KbName('2@')) && sameCL == 0
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('2@')) && sameCL > 0
+            elseif keycode(KbName('3#')) && sameCL > 0
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('2@')) && sameCL == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && sameCL == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
@@ -459,19 +459,19 @@ end
                 acc = 0;
             end
         elseif strcmpi(thisTask,'OR')
-            if keycode(KbName('1!')) && sameOR > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && sameOR > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('1!')) && sameOR == 0
+            elseif keycode(KbName('2@')) && sameOR == 0
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('2@')) && sameOR == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && sameOR == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('2@')) && sameOR > 0 
+            elseif keycode(KbName('3#')) && sameOR > 0 
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
@@ -485,19 +485,19 @@ end
                 acc = 0;
             end
         elseif strcmpi(thisTask,'SJ')
-            if keycode(KbName('1!')) && sameSJ > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && sameSJ > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('1!')) && sameSJ == 0 %stimuli were different and response was same
+            elseif keycode(KbName('2@')) && sameSJ == 0 %stimuli were different and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('2@')) && sameSJ == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && sameSJ == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('2@')) && sameSJ > 0 %stimuli were same and response was different
+            elseif keycode(KbName('3#')) && sameSJ > 0 %stimuli were same and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;

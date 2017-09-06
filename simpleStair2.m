@@ -110,11 +110,13 @@ switch cmd
             A.numCorrect = A.numCorrect + 1;
             if (A.numCorrect > 1) % if two correct responses then make harder
                 if A.numReversals < 5
-                    A.stimulusVal = A.stimulusVal - A.bigStep;
+                    %A.stimulusVal = A.stimulusVal - A.bigStep;
+                    A.stimulusVal = A.stimulusVal - A.step;
                 elseif A.numReversals >= 5 & A.numReversals < 10 %#ok
                     A.stimulusVal = A.stimulusVal - A.step;
                 elseif A.numReversals >= 11
-                    A.stimulusVal = A.stimulusVal - A.smallStep;
+                    %A.stimulusVal = A.stimulusVal - A.smallStep;
+                    A.stimulusVal = A.stimulusVal - A.step;
                 end
             end
             if A.numCorrect >=2
@@ -123,11 +125,13 @@ switch cmd
         else
             A.numReversals = A.numReversals + 1;
             if A.numReversals < 5
-                A.stimulusVal = A.stimulusVal + A.bigStep;
+                %A.stimulusVal = A.stimulusVal + A.bigStep;
+                A.stimulusVal = A.stimulusVal + A.step;
             elseif A.numReversals >= 5 & A.numReversals < 10 %#ok
                 A.stimulusVal = A.stimulusVal + A.step;
             elseif A.numReversals >= 11
-                A.stimulusVal = A.stimulusVal + A.smallStep;
+                %A.stimulusVal = A.stimulusVal + A.smallStep;
+                A.stimulusVal = A.stimulusVal + A.step;
             end
             A.numCorrect = 0;
         end 
