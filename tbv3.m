@@ -82,10 +82,10 @@ try %Use try catch loops for elegant error handling with PTB
     doRand = 1; %randomize and balance trials
     gaborDimPix = rectSize;
     sigma = gaborDimPix / 7;
-    contrast = 0.8;
+    contrast = 1;
     aspectRatio = 1;
     phase = 0;
-    numCycles = 5;
+    numCycles = 10;
     freq = numCycles / gaborDimPix;
     backgroundOffset = [s.gryColor 0];
     disableNorm = 1;
@@ -94,7 +94,7 @@ try %Use try catch loops for elegant error handling with PTB
     gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     % For staircase:
-    sj_initVal = 0.5;
+    sj_initVal = 0.7;
     sj_minVal = 0.05;
     sj_maxVal = 0.8;
     sj_stepSize = 0.05; %percent of range
@@ -392,7 +392,8 @@ end
     end %setupORpest
 
     function [RT, acc, response, TrialOnsetTime, trialOffTime] = ShowStimulus(params, sameSJ, sameCL, sameOR, presOrder, rectColors, rectAngles, SOA, respTimeOut, maxTrialSecs, thisTask)
-        b1 = s.SJ.minVal;
+        %b1 = s.SJ.minVal;
+        b1 = 0.25;
         if sameSJ
             SOA = b1;
         end

@@ -108,7 +108,7 @@ switch cmd
         makeHarder = accuracy; %figure out what to do for next trial
         if (makeHarder)
             A.numCorrect = A.numCorrect + 1;
-            if (A.numCorrect > 1) % if two correct responses then make harder
+            if (A.numCorrect > 0) % if one correct responses then make harder
                 if A.numReversals < 5
                     %A.stimulusVal = A.stimulusVal - A.bigStep;
                     A.stimulusVal = A.stimulusVal - A.step;
@@ -119,7 +119,7 @@ switch cmd
                     A.stimulusVal = A.stimulusVal - A.step;
                 end
             end
-            if A.numCorrect >=2
+            if A.numCorrect >=1
                 A.numCorrect = 0;
             end
         else
