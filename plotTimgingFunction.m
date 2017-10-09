@@ -1,6 +1,6 @@
 function plotTimgingFunction(SOA)
 
-b1 = 0.25;
+b1 = 0.5;
 nframes = 30;
 for f = 1:nframes
     nfdiv2 = nframes/2;

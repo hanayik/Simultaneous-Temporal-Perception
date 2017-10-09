@@ -1,4 +1,4 @@
-function CatchError = tbv3(sub,runtype)
+function CatchError = tbv5(sub,runtype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %              Scan order: t1, fmri1, fmri2
 %
@@ -47,7 +47,8 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    s.nRestFrames = 900-1;
+    %s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
+    s.nRestFrames = 300-1; %for testing on myself
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
     s.trimTime = 0;
@@ -67,10 +68,34 @@ try %Use try catch loops for elegant error handling with PTB
     params = PsychSetupParams(s.gryColor,0,1);%custom, made by TH
     %HideCursor(params.screen);
     Screen('TextSize', params.win, 28);
-    rectSize = 250;%size of stimulus rect
-    baseRect = [0 0 rectSize rectSize]; %make a PTB rect var
-    posXs = [params.maxXpixels*0.3 params.maxXpixels*0.7];%X positions for the stimuli
+    xplaces = linspace(0, params.maxXpixels,5);
+    rectPad = 15;
+    %rectSize = xplaces(3) - xplaces(1)-(rectPad*2);
+    posXs = [params.maxXpixels*0.35 params.maxXpixels*0.5 params.maxXpixels*0.65];%X positions for the stimuli
     posYs = [params.maxYpixels*0.5 params.maxYpixels*0.5];%Y positions for the stimuli
+    %%%%%%
+    %{
+    xCenter = params.Xc;
+    yCenter = params.Yc;
+    %theta = 0 : 0.01 : 2*pi;
+    rectSize = params.maxXpixels*0.1;
+    radius = rectSize*.75;
+    rotateFactor = 180;
+    xTop = radius * cos(deg2rad(90-rotateFactor)) + xCenter;
+    yTop = radius * sin(deg2rad(90-rotateFactor)) + yCenter;
+    xL = radius * cos(deg2rad(210-rotateFactor)) + xCenter;
+    yL = radius * sin(deg2rad(210-rotateFactor)) + yCenter;
+    xR = radius * cos(deg2rad(330-rotateFactor)) + xCenter;
+    yR = radius * sin(deg2rad(330-rotateFactor)) + yCenter;
+    posXs = [xL xTop xR];
+    posYs = [yL yTop yR];
+    %}
+    %plot(radius * cos(deg2rad(0+90)) + xCenter,radius * sin(deg2rad(0+90)) + yCenter,'k*');
+    %plot(radius * cos(deg2rad(120+90)) + xCenter,radius * sin(deg2rad(120+90)) + yCenter,'k*');
+    %plot(radius * cos(deg2rad(60-90)) + xCenter,radius * sin(deg2rad(60-90)) + yCenter,'k*');
+    %%%%%
+    rectSize = (posXs(2) - posXs(1))-rectPad;
+    baseRect = [0 0 rectSize rectSize]; %make a PTB rect var
     s.angles = [0 0];%%IMPORTANT
     s.SOA = 1;%%IMPORTANT
     s.angleMin = -90;
@@ -81,11 +106,11 @@ try %Use try catch loops for elegant error handling with PTB
     params.dotdur = 15;%duration of fixation alone, at beginning of trials
     doRand = 1; %randomize and balance trials
     gaborDimPix = rectSize;
-    sigma = gaborDimPix / 7;
-    contrast = 1;
+    sigma = gaborDimPix / 6;
+    contrast = 0.7;
     aspectRatio = 1;
     phase = 0;
-    numCycles = 10;
+    numCycles = 8;
     freq = numCycles / gaborDimPix;
     backgroundOffset = [s.gryColor 0];
     disableNorm = 1;
@@ -93,44 +118,55 @@ try %Use try catch loops for elegant error handling with PTB
     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
     gabortex1 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
     gabortex2 = CreateProceduralGabor(params.win, gaborDimPix, gaborDimPix, [], backgroundOffset, disableNorm, preContrastMultiplier,[0 1]);
-    % For staircase:
-    sj_initVal = 0.7;
+    % For psychAdapt:
+    targetAcc = 0.75;
+    sj_threshGuess = 0.1;
     sj_minVal = 0.05;
-    sj_maxVal = 0.8;
-    sj_stepSize = 0.05; %percent of range
+    sj_maxVal = 0.49; %sj comparison value is set to 0.5, so cant go above that
     %OR
-    or_initVal = 40;
+    or_threshGuess = 8;
     or_minVal = 1;
-    or_maxVal = 90;
-    or_stepSize = 0.05; %percent of range
+    or_maxVal = 15;
     %CL
-    cl_initVal = 0.3;
-    cl_minVal = 0.01;
-    cl_maxVal = 0.8;
-    cl_stepSize = 0.05; %percent of range
+    cl_threshGuess = 0.01;
+    cl_minVal = 0.001;
+    cl_maxVal = 0.1;
     if strcmpi(runtype,'t1')
+        s.trainTrials = 56;
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
         s.task = {};
         s.tasks = {'SJ','OR','CL'}; %do all 3 tasks for initial titration
-        %sides = {'L','R','L','R','L','R'};
-        %s.SJ = setupSJpest; %setup adaptive thresholding
-        %s.OR = setupORpest;
-        %s.CL = setupCLpest;
-        s.SJ = simpleStair2('create', 'initialVal', sj_initVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
-        s.CL = simpleStair2('create', 'initialVal', cl_initVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
-        s.OR = simpleStair2('create', 'initialVal', or_initVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
-
+        s.SJ = psychAdapt('setup',...
+            'targetAcc', targetAcc,...
+            'threshGuess', sj_threshGuess,...
+            'min', sj_minVal,...
+            'max', sj_maxVal,...
+            'probeLength', s.trainTrials); 
+        s.CL = psychAdapt('setup',...
+            'targetAcc', targetAcc,...
+            'threshGuess', cl_threshGuess,...
+            'min', cl_minVal,...
+            'max', cl_maxVal,...
+            'probeLength', s.trainTrials);
+        s.OR = psychAdapt('setup',...
+            'targetAcc', targetAcc,...
+            'threshGuess', or_threshGuess,...
+            'min', or_minVal,...
+            'max', or_maxVal,...
+            'probeLength', s.trainTrials);
+        
     elseif strcmpi(runtype,'fmri1')
         l = load(fullfile(subdir,['sub_' subjectString '_t1.mat']));
-        s.SJ = simpleStair2('create', 'initialVal', l.s.SJ.stimulusVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
-        s.CL = simpleStair2('create', 'initialVal', l.s.CL.stimulusVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
-        s.OR = simpleStair2('create', 'initialVal', l.s.OR.stimulusVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
+        %s.SJ = l.s.SJ;
+        s.SJ = psychAdapt('computeThreshold', 'model', l.s.SJ);
+        s.CL = psychAdapt('computeThreshold', 'model', l.s.CL);
+        s.OR = psychAdapt('computeThreshold', 'model', l.s.OR);
     elseif strcmpi(runtype,'fmri2')
         l = load(fullfile(subdir,['sub_' subjectString '_fmri1.mat']));
-        s.SJ = simpleStair2('create', 'initialVal', l.s.SJ.stimulusVal, 'minVal', sj_minVal, 'maxVal', sj_maxVal, 'stepSize', sj_stepSize, 'name', 'SJ');
-        s.CL = simpleStair2('create', 'initialVal', l.s.CL.stimulusVal, 'minVal', cl_minVal, 'maxVal', cl_maxVal, 'stepSize', cl_stepSize, 'name', 'CL');
-        s.OR = simpleStair2('create', 'initialVal', l.s.OR.stimulusVal, 'minVal', or_minVal, 'maxVal', or_maxVal, 'stepSize', or_stepSize, 'name', 'OR');
+        s.SJ = psychAdapt('computeThreshold', 'model', l.s.SJ);
+        s.CL = psychAdapt('computeThreshold', 'model', l.s.CL);
+        s.OR = psychAdapt('computeThreshold', 'model', l.s.OR);
     end
     if ~strcmpi(runtype,'t1') %if any run but the t1 scan (initial titration)
         s.nblockseach = 6;
@@ -142,7 +178,7 @@ try %Use try catch loops for elegant error handling with PTB
         s.nblocks = length(s.tasks);
         s.ntrials = 16;%trials per block, ntrials must be even
     else %else, do 40 trials of each task during t1
-        s.ntrials = 40;
+        s.ntrials = s.trainTrials;
         s.nblocks = 3;
     end
     instruct1 = sprintf('For this part of the experiment you will\n\nsee two shapes on the screen and\n\nyou will make decisions based on your current task.\n\nSometimes you will make decisions about TIME\n\nand other times you will make decisions\n\nabout the COLOR or ANGLE of the rectangles.\n\nYour decision will be one of two options\n\nSAME or DIFFERENT.\n\nPress your index finger button for SAME\n\nand your middle finger button for DIFFERENT.\n\nPress the index finger button now to continue.');
@@ -160,110 +196,103 @@ try %Use try catch loops for elegant error handling with PTB
         s.blockOnsetTime(b) = GetSecs-s.expStartTime;
         if strcmpi(s.tasks{b},'SJ')
             taskText = 'TIME';
-            %s.simCL = s.CL;
-            %s.simOR = s.OR;
         elseif strcmpi(s.tasks{b},'OR')
             taskText = 'ANGLE';
-            %s.simSJ = s.SJ;
-            %s.simCL = s.CL;
         elseif strcmpi(s.tasks{b},'CL')
             taskText = 'COLOR';
-            %s.simSJ = s.SJ;
-            %s.simOR = s.OR;
         end
+        params.taskText = taskText;
         DrawFormattedText(params.win,taskText, 'center', 'center');
         taskTextOn = Screen('Flip',params.win);
         Screen('Flip',params.win,taskTextOn + (60-0.5) * params.ifi);%wait 60 frames (about 1sec at 60Hz)
         %[s.leftRight(b,:), s.sameDiffSJ(b,:), s.sameDiffCL(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1],[0 1],[0 1]);
         if strcmpi(s.tasks{b},'SJ')
             if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
-                [s.leftRight(b,:), s.sameDiffSJ(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+                [s.leftRight(b,:), s.firstLastSJ(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[1 0],[0 0]);
             else
-                [s.leftRight(b,:), s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+                [s.leftRight(b,:),s.firstLastSJ(b,:) , s.sameDiffSJ(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[1 0],[0 0]);
+                s.sameDiffSJ(b,:) = 0;
             end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'CL')
             if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
-                [s.leftRight(b,:), s.sameDiffCL(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+                [s.leftRight(b,:),s.firstLastSJ(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[1 0],[0 0]);
             else
-                [s.leftRight(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+                [s.leftRight(b,:),s.firstLastSJ(b,:), s.sameDiffCL(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[1 0],[0 0]);
+                s.sameDiffCL(b,:) = 0; 
             end
             s.sameDiffSJ(b,1:s.ntrials) = 1;
             s.sameDiffOR(b,1:s.ntrials) = 1;
         elseif strcmpi(s.tasks{b},'OR')
             if strcmpi(runtype,'fmri1') || strcmpi(runtype,'fmri2')
-                [s.leftRight(b,:), s.sameDiffOR(b,:), s.stimIdx(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 1], [1 2]);
+                [s.leftRight(b,:), s.firstLastSJ(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1], [1 0],[0 0]);
             else
-                [s.leftRight(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1],[0 0 0 1]);
+                [s.leftRight(b,:),s.firstLastSJ(b,:), s.sameDiffOR(b,:)] = BalanceTrials(s.ntrials,doRand,[0 1], [1 0],[0 0]);
+                s.sameDiffOR(b,:) = 0;
             end
             s.sameDiffCL(b,1:s.ntrials) = 1;
             s.sameDiffSJ(b,1:s.ntrials) = 1;
         end
         for i = 1:s.ntrials
             if strcmpi(s.tasks{b},'SJ')
-                s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
-                s.SOA(b,i) = s.SJ.stimulusVal;
+                %s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
+                s.randAngle(b,i) = 0;
+                s.SOA(b,i) = s.SJ.stimVal; 
                 s.rectColors(b,i).colorMat = [s.redColor; s.redColor;];
                 s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)];
-                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
+                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b), s.firstLastSJ(b,i));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
-                %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
-%                 if s.RT(b,i) < 999
-%                     s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-%                 end
                 if (s.RT(b,i) < 999)
-                    if (s.sameDiffSJ(b,i) == 0)
-                        %s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-                        s.SJ = simpleStair2('update', 'data', s.SJ, 'accuracy', s.acc(b,i));
-                    elseif (s.sameDiffSJ(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        %s.SJ = CalculateStimLevel(s.SJ,s.acc(b,i));
-                        s.SJ = simpleStair2('update', 'data', s.SJ, 'accuracy', s.acc(b,i));
-                    end 
+                    if strcmpi(runtype,'t1')
+                        cmd = 'train';
+                    else
+                        cmd = 'test';
+                    end
+                    s.SJ = psychAdapt(cmd,'model',s.SJ,'acc',s.acc(b,i),'stimulusValue',s.SJ.stimVal); 
                 end
                 
             elseif strcmpi(s.tasks{b},'CL')
-                defaultSOA = s.SJ.minVal;
-                s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
+                defaultSOA = s.SJ.train.min;
+                %s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
+                s.randAngle(b,i) = 0;
                 s.SOA(b,i) = defaultSOA;
-                s.rectColors(b,i).colorMat = [s.redColor; [(s.redColor(1)-s.CL.stimulusVal) s.CL.stimulusVal*(0.299/0.587) 0];];
+                s.rectColors(b,i).colorMat = [s.redColor; [(s.redColor(1)-s.CL.stimVal) s.CL.stimVal*(0.299/0.587) 0];];
+                %s.rectColors(b,i).colorMat = [s.redColor; [(s.CL.stimVal) s.CL.stimVal*(0.299/0.587) 0];];
                 s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)];
-                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
+                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b),s.firstLastSJ(b,i));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
-                %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
-%                 if s.RT(b,i) < 999
-%                     s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
-%                 end
+                
                 if (s.RT(b,i) < 999)
-                    if (s.sameDiffCL(b,i) == 0)
-                        %s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
-                        s.CL = simpleStair2('update', 'data', s.CL, 'accuracy', s.acc(b,i));
-                    elseif (s.sameDiffCL(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        %s.CL = CalculateStimLevel(s.CL,s.acc(b,i));
-                        s.CL = simpleStair2('update', 'data', s.CL, 'accuracy', s.acc(b,i));
+                    if strcmpi(runtype,'t1')
+                        cmd = 'train';
+                    else
+                        cmd = 'test';
                     end
+                    s.CL = psychAdapt(cmd,'model',s.CL,'acc',s.acc(b,i),'stimulusValue',s.CL.stimVal);
                 end
                 
             elseif strcmpi(s.tasks{b},'OR')
-                defaultSOA = s.SJ.minVal;
-                s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
+                defaultSOA = s.SJ.train.min;
+                %s.randAngle(b,i) = randi([s.angleMin, s.angleMax]);
+                s.randAngle(b,i) = 0;
                 s.SOA(b,i) = defaultSOA;
                 s.rectColors(b,i).colorMat = [s.redColor; s.redColor;];
-                s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)-s.OR.stimulusVal];
-                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b));
+                %s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)-s.OR.stimVal];
+                s.rectAngles(b,i).angles = [s.randAngle(b,i) s.randAngle(b,i)-s.OR.stimVal];
+                [s.RT(b,i), s.acc(b,i), s.response(b,i), s.TrialOnsetTime(b,i), s.trialOffTime(b,i)] = ShowStimulus(params, s.sameDiffSJ(b,i), s.sameDiffCL(b,i), s.sameDiffOR(b,i), s.leftRight(b,i), s.rectColors(b,i).colorMat, s.rectAngles(b,i).angles, s.SOA(b,i), s.respTimeOut, s.maxTrialSecs, s.tasks(b),s.firstLastSJ(b,i));
                 s.TrialOnsetTime(b,i) = s.TrialOnsetTime(b,i) - s.expStartTime;
                 s.trialOffTime(b,i) = s.trialOffTime(b,i) - s.expStartTime;
                 %s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
                 if (s.RT(b,i) < 999)
-                    if (s.sameDiffOR(b,i) == 0)
-                        %s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
-                        s.OR = simpleStair2('update', 'data', s.OR, 'accuracy', s.acc(b,i));
-                    elseif (s.sameDiffOR(b,i) == 1 & s.acc(b,i) == 0) %#ok
-                        %s.OR = CalculateStimLevel(s.OR,s.acc(b,i));
-                        s.OR = simpleStair2('update', 'data', s.OR, 'accuracy', s.acc(b,i));
+                    if strcmpi(runtype,'t1')
+                        cmd = 'train';
+                    else
+                        cmd = 'test';
                     end
+                    s.OR = psychAdapt(cmd,'model',s.OR,'acc',s.acc(b,i),'stimulusValue',s.OR.stimVal);
                 end
             end
             s.trialDuration(b,i) = s.trialOffTime(b,i) - s.TrialOnsetTime(b,i);
@@ -391,11 +420,18 @@ end
         
     end %setupORpest
 
-    function [RT, acc, response, TrialOnsetTime, trialOffTime] = ShowStimulus(params, sameSJ, sameCL, sameOR, presOrder, rectColors, rectAngles, SOA, respTimeOut, maxTrialSecs, thisTask)
+    function [RT, acc, response, TrialOnsetTime, trialOffTime] = ShowStimulus(params, sameSJ, sameCL, sameOR, presOrder, rectColors, rectAngles, SOA, respTimeOut, maxTrialSecs, thisTask, firstLast)
         %b1 = s.SJ.minVal;
-        b1 = 0.25;
+        b1 = 0.5;
         if sameSJ
             SOA = b1;
+            b2 = b1;
+        else
+            if firstLast
+                b2 = b1+SOA;
+            else
+                b2 = b1-SOA;
+            end
         end
         if sameCL
             rectColors(2,:) = rectColors(1,:);
@@ -407,20 +443,27 @@ end
         waitframes = 1;
         RestrictKeysForKbCheck([KbName('escape') KbName('2@') KbName('3#')]);
         dontClear = 1;
-        
-        vbl = Screen('Flip', params.win,[],dontClear); %flip the screen to get a time stamp
+        oldSize = Screen('TextSize', params.win, 18);
+        DrawFormattedText(params.win,params.taskText(1), 'center', 'center');
+        vbl = Screen('Flip', params.win); %flip the screen to get a time stamp
         for f = 1:nframes
+            
             nfdiv2 = nframes/2;
             if f <= nfdiv2
                 bias1 = getBias(f/(nfdiv2),b1);
-                bias2 = getBias(f/(nfdiv2),SOA);
+                bias2 = getBias(f/(nfdiv2),b2);
             else
                 bias1 = 1 - getBias((f - ceil(nfdiv2))/(nfdiv2),b1);
-                bias2 = 1 - getBias((f - ceil(nfdiv2))/(nfdiv2),SOA);
+                bias2 = 1 - getBias((f - ceil(nfdiv2))/(nfdiv2),b2);
             end
-            if presOrder; ho1 = 1; ho2 = 2; elseif ~presOrder; ho1 = 2; ho2 = 1; end
-            Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
+            
+            %bias1 = getBias(f/(nframes),b1);
+            %bias2 = getBias(f/(nframes),b2);
+            if presOrder; ho1 = 3; ho2 = 1; elseif ~presOrder; ho1 = 1; ho2 = 3; end
+            %Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             Screen('DrawTextures', params.win, gabortex1, [], CenterRectOnPoint(baseRect, posXs(ho1), posYs(1)), rectAngles(1), [], [], rectColors(1,:)*bias1, [], kPsychDontDoRotation, propertiesMat');
+            Screen('DrawTextures', params.win, gabortex1, [], CenterRectOnPoint(baseRect, posXs(2), posYs(2)), rectAngles(1), [], [], rectColors(1,:)*bias1, [], kPsychDontDoRotation, propertiesMat');
+            DrawFormattedText(params.win,params.taskText(1), 'center', 'center');
             Screen('DrawTextures', params.win, gabortex2, [], CenterRectOnPoint(baseRect, posXs(ho2), posYs(1)), rectAngles(2), [], [], rectColors(2,:)*bias2, [], kPsychDontDoRotation, propertiesMat');
             vbl = Screen('Flip', params.win, vbl + (waitframes-0.5) * params.ifi);%now show it on screen by itself
             if f == 1
@@ -428,25 +471,28 @@ end
             end
             %[keyDown, secs, keycode] = KbCheck(-1);
         end
+        %Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
+        DrawFormattedText(params.win,params.taskText(1), 'center', 'center');
+        Screen('Flip', params.win);
         deviceN = -1;
         forWhat = [];
         untilTime = vbl+respTimeOut - s.trimTime;
         RT = 999;
         [secs, keycode] = KbWait(deviceN, forWhat, untilTime);
         if strcmpi(thisTask,'CL')  
-            if keycode(KbName('2@')) && sameCL > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && presOrder > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('2@')) && sameCL == 0
+            elseif keycode(KbName('2@')) && presOrder == 0
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('3#')) && sameCL > 0
+            elseif keycode(KbName('3#')) && presOrder > 0
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('3#')) && sameCL == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && presOrder == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
@@ -460,19 +506,19 @@ end
                 acc = 0;
             end
         elseif strcmpi(thisTask,'OR')
-            if keycode(KbName('2@')) && sameOR > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && presOrder > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('2@')) && sameOR == 0
+            elseif keycode(KbName('2@')) && presOrder == 0
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('3#')) && sameOR == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && presOrder == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('3#')) && sameOR > 0 
+            elseif keycode(KbName('3#')) && presOrder > 0 
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
@@ -486,19 +532,19 @@ end
                 acc = 0;
             end
         elseif strcmpi(thisTask,'SJ')
-            if keycode(KbName('2@')) && sameSJ > 0 %stimuli were same and response was same
+            if keycode(KbName('2@')) && presOrder > 0 %stimuli were same and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('2@')) && sameSJ == 0 %stimuli were different and response was same
+            elseif keycode(KbName('2@')) && presOrder == 0 %stimuli were different and response was same
                 response = 1;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
-            elseif keycode(KbName('3#')) && sameSJ == 0 %stimuli were different and response was different
+            elseif keycode(KbName('3#')) && presOrder == 0 %stimuli were different and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 1;
-            elseif keycode(KbName('3#')) && sameSJ > 0 %stimuli were same and response was different
+            elseif keycode(KbName('3#')) && presOrder > 0 %stimuli were same and response was different
                 response = 2;
                 RT = secs-TrialOnsetTime;
                 acc = 0;
@@ -516,17 +562,21 @@ end
                 acc = 0;
             end
         end
+        %{
         if strcmpi(runtype,'t1') && acc > 0 && response < 3
-            Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,s.grnColor, [], params.dotType);
+            Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             Screen('Flip', params.win);
         elseif strcmpi(runtype,'t1') && acc < 1 && response < 3
-            Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,s.redColor, [], params.dotType);
+            Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             Screen('Flip', params.win);
         else
             Screen('DrawDots', params.win, [params.Xc params.Yc], params.dotSize ,params.colors.black, [], params.dotType);
             Screen('Flip', params.win);
         end
+        %}
         trialOffTime = WaitSecs('UntilTime',TrialOnsetTime+maxTrialSecs);
+        if acc == 0; beep; end;
+        %Screen('TextSize', params.win, oldSize);
         %Screen('Close');
     end %ShowStimulus
 

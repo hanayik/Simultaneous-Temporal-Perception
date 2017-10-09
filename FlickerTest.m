@@ -4,9 +4,9 @@ function [redColor, grnColor, gryColor] = FlickerTest(params)
 %params = PsychSetupParams(1,1);
 KbName('UnifyKeyNames');
 %set default color values
-grnColor = [0 1 0]';
+grnColor = [0 0.7 0]';
 redColor = [0.8 0 0]';
-gryColor = [1 1 1]';
+gryColor = [0.7 0.7 0.7]';
 %while loop for flicker screen
 while 1
     %set Green and Red rectangles opposite of each other
