@@ -47,8 +47,8 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    %s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
-    s.nRestFrames = 300-1; %for testing on myself
+    s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
+    %s.nRestFrames = 300-1; %for testing on myself
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
     s.trimTime = 0;
@@ -169,7 +169,7 @@ try %Use try catch loops for elegant error handling with PTB
         s.OR = psychAdapt('computeThreshold', 'model', l.s.OR);
     end
     if ~strcmpi(runtype,'t1') %if any run but the t1 scan (initial titration)
-        s.nblockseach = 6;
+        s.nblockseach = 7;
         vals = {'SJ','CL','OR'}; %will be 12 blocks per fmri scan
         s.tasks = [];
         for i = 1:s.nblockseach
@@ -181,7 +181,7 @@ try %Use try catch loops for elegant error handling with PTB
         s.ntrials = s.trainTrials;
         s.nblocks = 3;
     end
-    instruct1 = sprintf('For this part of the experiment you will\n\nsee two shapes on the screen and\n\nyou will make decisions based on your current task.\n\nSometimes you will make decisions about TIME\n\nand other times you will make decisions\n\nabout the COLOR or ANGLE of the rectangles.\n\nYour decision will be one of two options\n\nSAME or DIFFERENT.\n\nPress your index finger button for SAME\n\nand your middle finger button for DIFFERENT.\n\nPress the index finger button now to continue.');
+    instruct1 = sprintf('For this part of the experiment you will\n\nsee two shapes on the screen and\n\nyou will make decisions based on your current task.\n\nSometimes you will make decisions about TIME\n\nand other times you will make decisions\n\nabout the COLOR or ANGLE of the shapes.\n\nYour decision will be one of two options\n\nSAME or DIFFERENT.\n\nPress your index finger button for SAME\n\nand your middle finger button for DIFFERENT.\n\nPress the index finger button now to continue.');
     instruct2 = sprintf('During the experiment the task\n\nmay change from one block to the next.\n\nTo indicate your task, there will be\n\n the word TIME, COLOR, or ANGLE\n\ndisplayed on the screen for 1 second\n\n after each rest period. Keep in\n\n mind that the timing, color, and angle\n\nof each rectangle may be different\n\nor the same, but you must focus only on the\n\nproperty indicated by your task.\n\nPress the middle finger button to begin.');
     ShowInstructions(instruct1,'2@');
     ShowInstructions(instruct2,'3#');
