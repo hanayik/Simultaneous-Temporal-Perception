@@ -4,7 +4,7 @@ function CatchError = tbv6(sub,runtype)
 %
 % the t1 will last ~6min and will present each task,
 % simulaneity, orientation, and color, so that the participant can
-% titrate down to at or near their threshold using our PEST algorithms.
+% titrate down to at or near their threshold using our psychAdapt algorithms.
 %
 % Trial timing:
 % 
@@ -13,16 +13,16 @@ function CatchError = tbv6(sub,runtype)
 % max trial time:       1800 ms (about 200 ms ISI built into trial, will catch lag)
 % 
 % num. blocks T1:       3 (for initial adaptation to task)
-% num. trials T1:       40
+% num. trials T1:       64
 %
 % task text/block:      1000 ms * 18
-% num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
-% num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
+% num. blocks fMRI-1:   21 (7 blocks x 3 tasks)
+% num. blocks fMRI-2:   21 (7 blocks x 3 tasks)
 % num. trials/block:    16 (can't do less than 16 for property balancing reasons)
 % task block duration:  28.8 s (1.8 * 16)
 % rest between blocks:  15 s (900 frames @ 60 Hz)
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((18*28.8)+(19*15)+18)/60 = 13.69 min (13 min, 41.4 sec)
+% fMRI run duration:    ((21*28.8)+(22*15)+18)/60 = ?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -47,7 +47,7 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
+    %s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
     %s.nRestFrames = 300-1; %for testing on myself
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
@@ -94,7 +94,7 @@ try %Use try catch loops for elegant error handling with PTB
     %plot(radius * cos(deg2rad(120+90)) + xCenter,radius * sin(deg2rad(120+90)) + yCenter,'k*');
     %plot(radius * cos(deg2rad(60-90)) + xCenter,radius * sin(deg2rad(60-90)) + yCenter,'k*');
     %%%%%
-    rectSize = (posXs(3) - posXs(1))-rectPad;
+    rectSize = round((posXs(3) - posXs(1))-rectPad);
     baseRect = [0 0 rectSize rectSize]; %make a PTB rect var
     s.angles = [0 0];%%IMPORTANT
     s.SOA = 1;%%IMPORTANT
@@ -122,17 +122,18 @@ try %Use try catch loops for elegant error handling with PTB
     targetAcc = 0.75;
     sj_threshGuess = 0.2;
     sj_minVal = 0.01;
-    sj_maxVal = 0.49; %sj comparison value is set to 0.5, so cant go above that
+    sj_maxVal = 0.4; %sj comparison value is set to 0.5, so cant go above that
     %OR
-    or_threshGuess = 10;
-    or_minVal = 1;
-    or_maxVal = 30;
+    or_threshGuess = 8;
+    or_minVal = 0.01;
+    or_maxVal = 25;
     %CL
     cl_threshGuess = 0.01;
     cl_minVal = 0.001;
     cl_maxVal = 0.2;
     if strcmpi(runtype,'t1')
-        s.trainTrials = 32;
+        s.trainTrials = 64;
+        s.nRestFrames = 300-1;
         %instruct1 = sprintf('For this part of the experiment you will\nsee two rectangles on the screen and\nyou will make decisions based on your current task.\nSometimes you will make decisions about TIME\nand other times you will make decisions\nabout the COLOR or ANGLE of the rectangles.\nYour decision will be one of two options\nSAME or DIFFERENT.\nPress your thumb button for SAME\nand your index finger button for DIFFERENT.\nPress the thumb button now to continue.');
         %instruct2 = sprintf('During the experiment the task\nmay change from one block to the next.\nTo indicate your task, there will be\n the word TIME, COLOR, or ANGLE\ndisplayed on the screen for 1 second\n after each rest period. Keep in\n mind that the timing, color, and angle\nof each rectangle may be different\nor the same, but you must focus only on the\nproperty indicated by your task.\nPress the index finger button to begin.');
         s.task = {};
@@ -157,12 +158,14 @@ try %Use try catch loops for elegant error handling with PTB
             'probeLength', s.trainTrials);
         
     elseif strcmpi(runtype,'fmri1')
+        s.nRestFrames = 900-1;
         l = load(fullfile(subdir,['sub_' subjectString '_t1.mat']));
         %s.SJ = l.s.SJ;
         s.SJ = psychAdapt('computeThreshold', 'model', l.s.SJ);
         s.CL = psychAdapt('computeThreshold', 'model', l.s.CL);
         s.OR = psychAdapt('computeThreshold', 'model', l.s.OR);
     elseif strcmpi(runtype,'fmri2')
+        s.nRestFrames = 900-1;
         l = load(fullfile(subdir,['sub_' subjectString '_fmri1.mat']));
         s.SJ = psychAdapt('computeThreshold', 'model', l.s.SJ);
         s.CL = psychAdapt('computeThreshold', 'model', l.s.CL);
