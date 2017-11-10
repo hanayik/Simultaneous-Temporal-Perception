@@ -99,8 +99,7 @@ switch cmd
         
     case 'plotTesting' %includes data from training plot too!
         pa = cell2mat(varargin(find(strcmp(varargin, 'model'))+1));
-        hitWeightFactor = 10;
-        missWeightFactor = hitWeightFactor - (hitWeightFactor*pa.test.targetAcc);
+        testingFactor = 10;
         CI = 0.95;
         trainAcc = pa.train.acc;
         testAcc = pa.test.acc;
@@ -112,7 +111,7 @@ switch cmd
         allVals = [trainVals testVals];
         testMiss = find(testAcc == 0);
         testHit = find(testAcc == 1);
-        testW = sqrt(1:length(testAcc));
+        testW = sqrt(1:length(testAcc))+testingFactor;
         %testW = ones(size(testAcc));
         %testW(testMiss) = hitWeightFactor;
         %testW(testHit) = hitWeightFactor;
@@ -169,6 +168,7 @@ function pa = updateTestingModel(pa)
 %missWeightFactor = hitWeightFactor - (hitWeightFactor*pa.test.targetAcc);
 CI = 0.95;
 CIspread = 5;
+testingFactor = 10;
 trainAcc = pa.train.acc;
 testAcc = pa.test.acc;
 allAcc = [trainAcc testAcc];
@@ -178,7 +178,7 @@ testVals = pa.test.stimulusVals;
 allVals = [trainVals testVals];
 testMiss = find(testAcc == 0);
 testHit = find(testAcc == 1);
-testW = sqrt(1:length(testAcc));
+testW = sqrt(1:length(testAcc))+testingFactor;
 %testW = ones(size(testAcc));
 %testW(testMiss) = hitWeightFactor;
 %testW(testHit) = hitWeightFactor;
