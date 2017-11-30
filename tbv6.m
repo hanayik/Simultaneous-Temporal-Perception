@@ -4,7 +4,7 @@ function CatchError = tbv6(sub,runtype)
 %
 % the t1 will last ~6min and will present each task,
 % simulaneity, orientation, and color, so that the participant can
-% titrate down to at or near their threshold using our psychAdapt algorithms.
+% titrate down to at or near their threshold using our PEST algorithms.
 %
 % Trial timing:
 % 
@@ -13,16 +13,16 @@ function CatchError = tbv6(sub,runtype)
 % max trial time:       1800 ms (about 200 ms ISI built into trial, will catch lag)
 % 
 % num. blocks T1:       3 (for initial adaptation to task)
-% num. trials T1:       64
+% num. trials T1:       40
 %
 % task text/block:      1000 ms * 18
-% num. blocks fMRI-1:   21 (7 blocks x 3 tasks)
-% num. blocks fMRI-2:   21 (7 blocks x 3 tasks)
+% num. blocks fMRI-1:   18 (6 blocks x 3 tasks)
+% num. blocks fMRI-2:   18 (6 blocks x 3 tasks)
 % num. trials/block:    16 (can't do less than 16 for property balancing reasons)
 % task block duration:  28.8 s (1.8 * 16)
 % rest between blocks:  15 s (900 frames @ 60 Hz)
 % num. rest blocks:     num. fMRI blocks + 1 (start with rest)
-% fMRI run duration:    ((21*28.8)+(22*15)+18)/60 = ?
+% fMRI run duration:    ((18*28.8)+(19*15)+18)/60 = 13.69 min (13 min, 41.4 sec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CatchError = 0; %for error handling, default to "0" exit code
@@ -47,7 +47,7 @@ subFile = fullfile(subdir,['sub_' subjectString '_' runtype '.mat']);
 
 try %Use try catch loops for elegant error handling with PTB
     %trial event times = stim[501ms] + resp[1100ms] + iti[199ms]
-    %s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
+    s.nRestFrames = 900-1; % THIS IS FOR RUNNING SUBJECTS
     %s.nRestFrames = 300-1; %for testing on myself
     s.respTimeOut = 1.1;
     s.maxTrialSecs = 1.8;
@@ -122,11 +122,11 @@ try %Use try catch loops for elegant error handling with PTB
     targetAcc = 0.75;
     sj_threshGuess = 0.2;
     sj_minVal = 0.01;
-    sj_maxVal = 0.4; %sj comparison value is set to 0.5, so cant go above that
+    sj_maxVal = 0.49; %sj comparison value is set to 0.5, so cant go above that
     %OR
-    or_threshGuess = 8;
-    or_minVal = 0.01;
-    or_maxVal = 25;
+    or_threshGuess = 4;
+    or_minVal = 0.1;
+    or_maxVal = 10;
     %CL
     cl_threshGuess = 0.01;
     cl_minVal = 0.001;
@@ -258,7 +258,7 @@ try %Use try catch loops for elegant error handling with PTB
                     else % if stimulus levels were not different
                         if strcmpi(cmd, 'test') % only get this far if in testing (fMRI mode)
                             if s.acc(b,i) == 0 % if subj got this trial wrong when stimului were the same, penalize them for it (catch trials)
-                                s.SJ = psychAdapt(cmd,'model',s.SJ,'acc',s.acc(b,i),'stimulusValue',s.SJ.test.threshGuess);
+                                s.SJ = psychAdapt(cmd,'model',s.SJ,'acc',0,'stimulusValue',s.SJ.test.threshGuess);
                             end
                         end
                     end
