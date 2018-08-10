@@ -1,4 +1,7 @@
 # TBV 
+
+[![DOI](https://zenodo.org/badge/70529141.svg)](https://zenodo.org/badge/latestdoi/70529141)
+
 Temporal binding in vision experiment
 
 ### Background
